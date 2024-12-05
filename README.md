@@ -34,6 +34,6 @@ FocusFlow was inspired by the need to reduce distractions and build meaningful d
 Clone the repository and run the application using Python:
 
 ```bash
-git clone https://github.com/YourUsername/FocusFlow.git
+git clone https://github.com/giomambre/FocusFlow.git
 cd FocusFlow
 python main.py
