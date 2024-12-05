@@ -1,10 +1,61 @@
 from tkinter import *
 from tkinter import ttk
-from datetime import date
+from datetime import date, datetime
 import tkinter as tk
 from PIL import Image, ImageTk
 import time
 
+class week_plan_window(tk.Toplevel):
+    def __init__(self):
+        super().__init__()
+        self.title("WEEK PLAN")
+        self.geometry("600x500+710+320")
+        self.minsize(500,400)
+        self.columnconfigure( (0,1,2,3), weight = 1, uniform="a")
+        self.rowconfigure(0,weight=1,uniform="a")
+        self.rowconfigure(1,weight=2,uniform="a")
+        self.rowconfigure(2,weight=4,uniform="a")
+        self.grab_set()  #To make the root window untouchable
+        self.set_gui()
+    
+    
+    def set_gui(self):
+        #HEAD
+        nav_bar_img = Image.open("./img/9293128.png").resize((35,35))
+        self.nav_bar_img_tk = ImageTk.PhotoImage(nav_bar_img)
+        nav_bar_button = Button(self , image = self.nav_bar_img_tk, width="50", height="50",bg="white" )
+        nav_bar_button.grid(column=0,row=0,sticky="nws",padx = 5,pady=5)
+        clock = Label(self ,text="WEEKLY PLANNER", font = ("Verdana", 17) , bg="#e84118" , fg = "#353b48")
+        clock.grid(column=0, row=0, columnspan=4, sticky="nwse", ipadx = "20" ,ipady="20")
+        nav_bar_button.lift()
+        
+        # Select Day
+        select_day_label = Label(self, text="SELECT DAY:", font = ("Verdana", 13,"bold"))
+        select_day_label.grid(row=1, column=0,sticky="nse",padx=5,pady=10)
+        day_selected = tk.StringVar() 
+        monthchoosen = ttk.Combobox(self, width = 27, textvariable = day_selected)  
+        
+        monthchoosen['values'] = (' January',   #placeholder
+                          ' February', 
+                          ' March', 
+                          ' April', 
+                          ' May', 
+                          ' June', 
+                          ' July', 
+                          ' August', 
+                          ' September', 
+                          ' October', 
+                          ' November', 
+                          ' December')  
+        monthchoosen.grid(row=1,column=1,padx=5,pady=10)
+
+        add_day_img = Image.open("./img/add_button.png").resize((35,35))
+        self.add_day_img_tk = ImageTk.PhotoImage(add_day_img)
+        add_button = Button(self , image = self.add_day_img_tk, width="50", height="50",borderwidth=0 )
+        add_button.grid(column=2,row=1,sticky="nsw",padx = 5,pady=5)
+        
+        
+        
 week_days = {0 : "Mon" , 1 : "Tue" , 2 : "Wed" , 3 : "Thu" , 4 : "Fri" , 5 : "Sat" , 6 : "Sun" }
 
 def get_time():
@@ -21,9 +72,9 @@ def start_session():
     
     
 def open_daiy_plan_window():
-    extra_window = tk.Toplevel()
-    extra_window.geometry("600x500+710+320")
-    root.minsize(500,400)
+    root.grab_set()
+    extra_window = week_plan_window()
+  
 
 
 root = Tk()
@@ -82,15 +133,35 @@ activity_listbox["yscrollcommand"] = scrollbar_activity.set
 
 #Today Plan
 
+def highlight_current_activity(): 
+   
+    current_time = datetime.now().strftime("%H:%M")  
+
+    for idx, (time_range, activity) in enumerate(daily_schedule):
+        start_time, end_time = time_range.split(" - ")  
+
+       
+        if start_time <= current_time <= end_time:
+            activity_labels[idx].config(background="yellow", font=("Verdana", 12, "bold"))
+        else:
+            activity_labels[idx].config(background="red", font=("Verdana", 12))  
+
+   
+    root.after(60000, highlight_current_activity)
+
+
+
 
 schedule_data = {
-            "Wed": [ ("Write Report","09:00 - 10:00"), ("10:30", "Meeting"), ("14:00", "Code Review")],
-            "Tue": [("08:00", "Exercise"), ("09:30", "Team Standup")],
-            # ...
-        }
+    "05/12/2024": [("09:00 - 10:00", "Code Interview"), ("16:00 - 17.00", "Meeting"), ("14:00 - 15:00", "Code Review")],
+    "06/12/2024": [("08:00", "Exercise"), ("09:30", "Team Standup"), ("11:00", "Project Planning"), 
+                   ("13:00", "Lunch"), ("15:00", "Team Sync"), ("17:00", "Wrap Up Meeting"), 
+                   ("18:00", "Personal Study")],
+   
+}
 
 today = date.today()
-current_day = today.strftime("%a")
+current_day = today.strftime("%d/%m/%Y")  
 activity_labels = []  # References daily plan Labels 
 
 left_frame = ttk.Frame(root)
@@ -104,15 +175,15 @@ daily_schedule = schedule_data.get(current_day, [])
 
 for idx, (time, activity) in enumerate(daily_schedule[:10]):
 
-    target_frame = left_frame if idx < 5 else right_frame
-    row = idx if idx < 5 else idx - 5 
+    target_frame = left_frame if idx < 6 else right_frame
+    row = idx if idx < 6 else idx - 6 
 
     label_text = f"{time}   {activity}"
     label = ttk.Label(target_frame, text=label_text, font=("Verdana", 12), background="red")
     label.grid(row=row, column=0, sticky="w", pady=10,padx=5)
 
     activity_labels.append(label)
-
+highlight_current_activity()
 """ upper_frame = Label(root, background="red", text ="ROSSO" )
 lower_frame = Label(root, background="blue", text ="BLUE" )
 upper_frame.grid(column=1, row=0,sticky="nswe")
