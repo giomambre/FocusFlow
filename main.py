@@ -1,20 +1,22 @@
 from tkinter import *
 from tkinter import ttk
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import tkinter as tk
 from PIL import Image, ImageTk
-import time
-
+import json
+today = date.today()
 class week_plan_window(tk.Toplevel):
     def __init__(self):
         super().__init__()
         self.title("WEEK PLAN")
         self.geometry("600x500+710+320")
         self.minsize(500,400)
-        self.columnconfigure( (0,1,2,3), weight = 1, uniform="a")
+        self.columnconfigure( (0,1,2,3,4), weight = 1, uniform="a")
         self.rowconfigure(0,weight=1,uniform="a")
-        self.rowconfigure(1,weight=2,uniform="a")
-        self.rowconfigure(2,weight=4,uniform="a")
+        self.rowconfigure(1,weight=1,uniform="a")
+
+        self.rowconfigure(2,weight=1,uniform="a")
+        self.rowconfigure(3,weight=4,uniform="a")
         self.grab_set()  #To make the root window untouchable
         self.set_gui()
     
@@ -23,43 +25,79 @@ class week_plan_window(tk.Toplevel):
         #HEAD
         nav_bar_img = Image.open("./img/9293128.png").resize((35,35))
         self.nav_bar_img_tk = ImageTk.PhotoImage(nav_bar_img)
-        nav_bar_button = Button(self , image = self.nav_bar_img_tk, width="50", height="50",bg="white" )
+        nav_bar_button = Button(self , image = self.nav_bar_img_tk, width="50", height="50",bg="white",borderwidth=0 )
         nav_bar_button.grid(column=0,row=0,sticky="nws",padx = 5,pady=5)
         clock = Label(self ,text="WEEKLY PLANNER", font = ("Verdana", 17) , bg="#e84118" , fg = "#353b48")
-        clock.grid(column=0, row=0, columnspan=4, sticky="nwse", ipadx = "20" ,ipady="20")
-        nav_bar_button.lift()
+        clock.grid(column=0, row=0, columnspan=5, sticky="nwse", ipadx = "20" ,ipady="20")
+        nav_bar_button.lift()   
         
         # Select Day
-        select_day_label = Label(self, text="SELECT DAY:", font = ("Verdana", 13,"bold"))
-        select_day_label.grid(row=1, column=0,sticky="nse",padx=5,pady=10)
-        day_selected = tk.StringVar() 
-        monthchoosen = ttk.Combobox(self, width = 27, textvariable = day_selected)  
+        select_day_label = Label(self, text="SELECT DAY:", font = ("Verdana", 11,"bold"),bg="red")
+        select_day_label.grid(row=2, column=0,sticky="nse",padx=5,pady=10)
         
-        monthchoosen['values'] = (' January',   #placeholder
-                          ' February', 
-                          ' March', 
-                          ' April', 
-                          ' May', 
-                          ' June', 
-                          ' July', 
-                          ' August', 
-                          ' September', 
-                          ' October', 
-                          ' November', 
-                          ' December')  
-        monthchoosen.grid(row=1,column=1,padx=5,pady=10)
+        self.current_day = date.today()
+       
+        self.day_display_label = Label(self, text=self.current_day.strftime("%d/%m/%Y"),
+        font=("Verdana", 12), bg="white", relief="solid")
+        self.day_display_label.grid(row=2,column=2,padx=5,pady=10)
+         # Previous Day Button
+        prev_day_img = Image.open("./img/prev_day.png").resize((35, 35))
+        self.prev_day_img_tk = ImageTk.PhotoImage(prev_day_img)
+        prev_button = Button(self, image=self.prev_day_img_tk , command=self.go_to_prev_day, width="50", height="50", borderwidth=0)
+        prev_button.grid(column=1, row=2, sticky="nswe", padx=5, pady=5)
+
+        # Next Day Button
+        next_day_img = Image.open("./img/next_day.png").resize((35, 35))
+        self.next_day_img_tk = ImageTk.PhotoImage(next_day_img)
+        next_button = Button(self, image=self.next_day_img_tk, command=self.go_to_next_day, width="50", height="50", borderwidth=0)
+        next_button.grid(column=3, row=2, sticky="nswe", padx=5, pady=5)
+        
+        
+        """  monthchoosen = ttk.Combobox(self, width = 27, textvariable = day_selected)  
+            
+            monthchoosen['values'] = (' January',   #placeholder
+                            ' February', 
+                            ' March', 
+                            ' April', 
+                            ' May', 
+                            ' June', 
+                            ' July', 
+                            ' August', 
+                            ' September', 
+                            ' October', 
+                            ' November', 
+                            ' December')  
+            monthchoosen.grid(row=2,column=1,padx=5,pady=10) """
 
         add_day_img = Image.open("./img/add_button.png").resize((35,35))
         self.add_day_img_tk = ImageTk.PhotoImage(add_day_img)
         add_button = Button(self , image = self.add_day_img_tk, width="50", height="50",borderwidth=0 )
-        add_button.grid(column=2,row=1,sticky="nsw",padx = 5,pady=5)
+        add_button.grid(column=4,row=2,sticky="nsw",padx = 5,pady=5)
         
+        #ADD a NEW DAY PLAN
+        new_day_plan_button = Button(self , text = "ADD NEW DAILY PLAN" )
+        new_day_plan_button.grid(row=1,column=1,sticky="nswe",padx=10,pady=5,columnspan=3)
+        
+    def go_to_prev_day(self):
+        previous_day = self.current_day - timedelta(days=1)
+        if previous_day >= date.today():
+            self.current_day = previous_day
+        self.day_display_label.config(text=self.current_day.strftime("%d/%m/%Y"))
+        self.update_schedule_display()
+
+    def go_to_next_day(self):
+
+        self.current_day += timedelta(days=1)
+        self.day_display_label.config(text=self.current_day.strftime("%d/%m/%Y"))
+        self.update_schedule_display()
+
+
         
         
 week_days = {0 : "Mon" , 1 : "Tue" , 2 : "Wed" , 3 : "Thu" , 4 : "Fri" , 5 : "Sat" , 6 : "Sun" }
 
 def get_time():
-    curr_time = time.strftime("%H:%M:%S", time.localtime())
+    curr_time = datetime.now().strftime("%H:%M:%S")
     today = date.today()
     curr_day = today.strftime(" %d/%m/%Y ")
     timevar = week_days[today.weekday()] + ", " +curr_time  + "\n"  + curr_day 
@@ -94,7 +132,7 @@ root.rowconfigure(2,weight=2, uniform="a")
 
 nav_bar_img = Image.open("./img/9293128.png").resize((35,35))
 nav_bar_img_tk = ImageTk.PhotoImage(nav_bar_img)
-nav_bar_button = Button(root, image = nav_bar_img_tk, command=open_daiy_plan_window, width="50", height="50",bg="white" )
+nav_bar_button = Button(root, image = nav_bar_img_tk, command=open_daiy_plan_window, width="50", height="50",bg="white",borderwidth=0 )
 nav_bar_button.grid(column=0,row=0,sticky="nws",padx = 5,pady=5)
 
 #Clock
@@ -151,17 +189,18 @@ def highlight_current_activity():
 
 
 
+today = date.today()
+current_day = today.strftime("%d/%m/%Y") 
 
 schedule_data = {
-    "05/12/2024": [("09:00 - 10:00", "Code Interview"), ("16:00 - 17.00", "Meeting"), ("14:00 - 15:00", "Code Review")],
-    "06/12/2024": [("08:00", "Exercise"), ("09:30", "Team Standup"), ("11:00", "Project Planning"), 
+    f"{current_day}": [("16:00 - 17:00", "Code Interview"), ("16:00 - 17.00", "Meeting"), ("14:00 - 15:00", "Code Review")],
+    "07/12/2024": [("08:00", "Exercise"), ("09:30", "Team Standup"), ("11:00", "Project Planning"), 
                    ("13:00", "Lunch"), ("15:00", "Team Sync"), ("17:00", "Wrap Up Meeting"), 
                    ("18:00", "Personal Study")],
    
 }
 
-today = date.today()
-current_day = today.strftime("%d/%m/%Y")  
+
 activity_labels = []  # References daily plan Labels 
 
 left_frame = ttk.Frame(root)
