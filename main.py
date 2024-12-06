@@ -9,7 +9,7 @@ class week_plan_window(tk.Toplevel):
     def __init__(self):
         super().__init__()
         self.title("WEEK PLAN")
-        self.geometry("600x500+710+320")
+        self.geometry("700x500+710+320")
         self.minsize(500,400)
         self.columnconfigure( (0,1,2,3,4), weight = 1, uniform="a")
         self.rowconfigure(0,weight=1,uniform="a")
@@ -52,22 +52,7 @@ class week_plan_window(tk.Toplevel):
         next_button = Button(self, image=self.next_day_img_tk, command=self.go_to_next_day, width="50", height="50", borderwidth=0)
         next_button.grid(column=3, row=2, sticky="nswe", padx=5, pady=5)
         
-        
-        """  monthchoosen = ttk.Combobox(self, width = 27, textvariable = day_selected)  
-            
-            monthchoosen['values'] = (' January',   #placeholder
-                            ' February', 
-                            ' March', 
-                            ' April', 
-                            ' May', 
-                            ' June', 
-                            ' July', 
-                            ' August', 
-                            ' September', 
-                            ' October', 
-                            ' November', 
-                            ' December')  
-            monthchoosen.grid(row=2,column=1,padx=5,pady=10) """
+    
 
         add_day_img = Image.open("./img/add_button.png").resize((35,35))
         self.add_day_img_tk = ImageTk.PhotoImage(add_day_img)
@@ -77,6 +62,17 @@ class week_plan_window(tk.Toplevel):
         #ADD a NEW DAY PLAN
         new_day_plan_button = Button(self , text = "ADD NEW DAILY PLAN" )
         new_day_plan_button.grid(row=1,column=1,sticky="nswe",padx=10,pady=5,columnspan=3)
+        
+        
+        
+        
+        #left and right frame     
+        self.left_frame = ttk.Frame(self)
+        self.left_frame.grid(row=3, column=0, sticky="nsew",columnspan=2, padx=10,pady=5)
+
+        self.right_frame = ttk.Frame(self)
+        self.right_frame.grid(row=3, column=2, sticky="nsew", columnspan=2, padx=10,pady=5)
+
         
     def go_to_prev_day(self):
         previous_day = self.current_day - timedelta(days=1)
@@ -91,8 +87,39 @@ class week_plan_window(tk.Toplevel):
         self.day_display_label.config(text=self.current_day.strftime("%d/%m/%Y"))
         self.update_schedule_display()
 
+    def update_schedule_display(self):
+        
+        today = date.today()
+        current_day = today.strftime("%d/%m/%Y") 
+    
+        schedule_data = {
+            f"{current_day}": [("16:00 - 17:00", "Code Interview"), ("16:00 - 17.00", "Meeting"), ("14:00 - 15:00", "Code Review")],
+            "07/12/2024": [("08:00", "Exercise"), ("09:30", "Team Standup"), ("11:00", "Project Planning"), 
+                        ("13:00", "Lunch"), ("15:00", "Team Sync"), ("17:00", "Wrap Up Meeting"), 
+                        ("18:00", "Personal Study")],
+        
+        }
+
+       
+        self.activity_labels = []
+        
 
         
+
+
+        daily_schedule = schedule_data.get(self.current_day.strftime("%d/%m/%Y"), [])
+        print(daily_schedule , self.current_day)     
+        for idx, (time, activity) in enumerate(daily_schedule[:10]):
+
+            target_frame = self.left_frame if idx < 6 else self.right_frame
+            row = idx if idx < 6 else idx - 6 
+
+            label_text = f"{time}   {activity}"
+            label = ttk.Label(target_frame, text=label_text, font=("Verdana", 12), background="red")
+            label.grid(row=row, column=0, sticky="w", pady=10,padx=5)
+
+            activity_labels.append(label)
+                
         
 week_days = {0 : "Mon" , 1 : "Tue" , 2 : "Wed" , 3 : "Thu" , 4 : "Fri" , 5 : "Sat" , 6 : "Sun" }
 
