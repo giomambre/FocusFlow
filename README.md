@@ -27,8 +27,7 @@ FocusFlow was inspired by the need to reduce distractions and build meaningful d
 - Encourages a distraction-free environment to help you reach a **state of flow**.
 - Lightweight and built entirely with Python, making it easy to run and customize.
 
-## 📷 Screenshots
-*(Add screenshots of the app interface here for visual appeal)*
+## 📷 Vide Demo
 
 ## 📦 Installation
 Clone the repository and run the application using Python:
