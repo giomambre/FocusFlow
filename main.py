@@ -20,8 +20,8 @@ schedule_data = {
 class week_plan_window(tk.Toplevel):
     def __init__(self):
         super().__init__()
-        self.title("WEEK PLAN")
-        self.geometry("700x500+710+320")
+        self.title("FOCUS FLOW")
+        self.geometry("700x500+610+290")
         self.minsize(500,400)
         self.columnconfigure( (0,1,2,3,4), weight = 1, uniform="a")
         self.rowconfigure(0,weight=1,uniform="a")
@@ -37,7 +37,7 @@ class week_plan_window(tk.Toplevel):
         #HEAD
         nav_bar_img = Image.open("./img/9293128.png").resize((35,35))
         self.nav_bar_img_tk = ImageTk.PhotoImage(nav_bar_img)
-        nav_bar_button = Button(self , image = self.nav_bar_img_tk, width="50", height="50",bg="white",borderwidth=0 )
+        nav_bar_button = Button(self , command=self.open_add_activity_window, image = self.nav_bar_img_tk, width="50", height="50",bg="white",borderwidth=0 )
         nav_bar_button.grid(column=0,row=0,sticky="nws",padx = 5,pady=5)
         clock = Label(self ,text="WEEKLY PLANNER", font = ("Verdana", 17) , bg="#e84118" , fg = "#353b48")
         clock.grid(column=0, row=0, columnspan=5, sticky="nwse", ipadx = "20" ,ipady="20")
@@ -68,7 +68,7 @@ class week_plan_window(tk.Toplevel):
 
         add_day_img = Image.open("./img/add_button.png").resize((35,35))
         self.add_day_img_tk = ImageTk.PhotoImage(add_day_img)
-        add_button = Button(self , image = self.add_day_img_tk, width="50", height="50",borderwidth=0 )
+        add_button = Button(self , image = self.add_day_img_tk, width="50", height="50",borderwidth=0, command=self.open_add_activity_window )
         add_button.grid(column=4,row=2,sticky="nsw",padx = 5,pady=5)
         
         #ADD a NEW DAY PLAN
@@ -110,7 +110,53 @@ class week_plan_window(tk.Toplevel):
 
         display_activities(self,[self.left_frame,self.right_frame],daily_schedule,self.activity_labels)
 
-                
+    def open_add_activity_window(self):    
+        self.grab_set()
+        extra_window = add_activity_window()
+        
+        
+class add_activity_window(tk.Toplevel):
+    def __init__(self):
+        super().__init__()
+        self.title("FOCUS FLOW")
+        self.geometry("700x500+610+290")
+        self.minsize(500,400)
+        self.columnconfigure( (0,1,2,3,4), weight = 1, uniform="a")
+        self.rowconfigure(0,weight=1,uniform="a")
+        self.rowconfigure(1,weight=1,uniform="a")
+        self.activity_labels = []
+        self.rowconfigure(2,weight=1,uniform="a")
+        self.rowconfigure(3,weight=4,uniform="a")
+        self.grab_set()  #To make the root window untouchable
+        self.set_gui()  
+        
+        
+    def set_gui(self):
+        
+        #HEAD
+        nav_bar_img = Image.open("./img/9293128.png").resize((35,35))
+        self.nav_bar_img_tk = ImageTk.PhotoImage(nav_bar_img)
+        nav_bar_button = Button(self , image = self.nav_bar_img_tk, width="50", height="50",bg="white",borderwidth=0 )
+        nav_bar_button.grid(column=0,row=0,sticky="nws",padx = 5,pady=5)
+        clock = Label(self ,text="ADD NEW ACTIVITY", font = ("Verdana", 17) , bg="#e84118" , fg = "#353b48")
+        clock.grid(column=0, row=0, columnspan=5, sticky="nwse", ipadx = "20" ,ipady="20")
+        nav_bar_button.lift()
+        
+        
+        #NEW ACTIVITY TEXT
+        name_activity=tk.StringVar()
+
+        name_activity_entry = tk.Entry(self,textvariable = name_activity, font=('Verdana',14),bg="#ffffff",borderwidth=0)
+        name_activity_entry.insert(0, "Title")
+        name_activity_entry.grid(row = 1, column= 1, pady=10 , padx=10,sticky="nswe",columnspan=3)
+        name_activity_entry.bind("<Button-1>", lambda event: clear_entry(event, name_activity_entry))
+        
+        def clear_entry(event, entry):
+            entry.delete(0, END)
+        
+        
+        
+        
         
 week_days = {0 : "Mon" , 1 : "Tue" , 2 : "Wed" , 3 : "Thu" , 4 : "Fri" , 5 : "Sat" , 6 : "Sun" }
 
@@ -146,7 +192,7 @@ def display_activities(self, frame, activities,list_activity):
         list_activity.append(label)
 
 root = Tk()
-root.title("DEEP WORK ASSISTANT")
+root.title("FOCUS FLOW")
 root.geometry("700x600+610+220")
 root.config(bg="black")
 root.minsize(600,500)
