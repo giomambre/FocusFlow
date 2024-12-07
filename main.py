@@ -5,6 +5,18 @@ import tkinter as tk
 from PIL import Image, ImageTk
 import json
 today = date.today()
+activity_labels = [] # # References daily plan Labels for the main window
+
+
+schedule_data = {
+            f"{today.strftime("%d/%m/%Y")}": [("16:00 - 17:00", "Code Interview"), ("16:00 - 17.00", "Meeting"), ("14:00 - 15:00", "Code Review")],
+            "02/12/2024": [("08:00", "Exercise"), ("09:30", "Team Standup"), ("11:00", "Project Planning"), 
+                        ("13:00", "Lunch"), ("15:00", "Team Sync"), ("17:00", "Wrap Up Meeting"), 
+                        ("18:00", "Personal Study")],
+        
+        }
+
+
 class week_plan_window(tk.Toplevel):
     def __init__(self):
         super().__init__()
@@ -14,7 +26,7 @@ class week_plan_window(tk.Toplevel):
         self.columnconfigure( (0,1,2,3,4), weight = 1, uniform="a")
         self.rowconfigure(0,weight=1,uniform="a")
         self.rowconfigure(1,weight=1,uniform="a")
-
+        self.activity_labels = []
         self.rowconfigure(2,weight=1,uniform="a")
         self.rowconfigure(3,weight=4,uniform="a")
         self.grab_set()  #To make the root window untouchable
@@ -43,14 +55,14 @@ class week_plan_window(tk.Toplevel):
          # Previous Day Button
         prev_day_img = Image.open("./img/prev_day.png").resize((35, 35))
         self.prev_day_img_tk = ImageTk.PhotoImage(prev_day_img)
-        prev_button = Button(self, image=self.prev_day_img_tk , command=self.go_to_prev_day, width="50", height="50", borderwidth=0)
-        prev_button.grid(column=1, row=2, sticky="nswe", padx=5, pady=5)
+        self.prev_button = Button(self, image=self.prev_day_img_tk , command=self.go_to_prev_day, width="50", height="50", borderwidth=0)
+        self.prev_button.grid(column=1, row=2, sticky="nswe", padx=5, pady=5)
 
         # Next Day Button
         next_day_img = Image.open("./img/next_day.png").resize((35, 35))
         self.next_day_img_tk = ImageTk.PhotoImage(next_day_img)
-        next_button = Button(self, image=self.next_day_img_tk, command=self.go_to_next_day, width="50", height="50", borderwidth=0)
-        next_button.grid(column=3, row=2, sticky="nswe", padx=5, pady=5)
+        self.next_button = Button(self, image=self.next_day_img_tk, command=self.go_to_next_day, width="50", height="50", borderwidth=0)
+        self.next_button.grid(column=3, row=2, sticky="nswe", padx=5, pady=5)
         
     
 
@@ -73,52 +85,31 @@ class week_plan_window(tk.Toplevel):
         self.right_frame = ttk.Frame(self)
         self.right_frame.grid(row=3, column=2, sticky="nsew", columnspan=2, padx=10,pady=5)
 
+        self.activity_labels = []
+        daily_schedule = schedule_data.get(self.current_day.strftime("%d/%m/%Y"), [])
+
+        display_activities(self,[self.left_frame,self.right_frame],daily_schedule,self.activity_labels)
+
         
     def go_to_prev_day(self):
         previous_day = self.current_day - timedelta(days=1)
         if previous_day >= date.today():
             self.current_day = previous_day
-        self.day_display_label.config(text=self.current_day.strftime("%d/%m/%Y"))
-        self.update_schedule_display()
+        new_day = self.current_day.strftime("%d/%m/%Y")
+        self.day_display_label.config(text=new_day)
+        daily_schedule = schedule_data.get(new_day, [])
+
+        display_activities(self,[self.left_frame,self.right_frame],daily_schedule,self.activity_labels)
 
     def go_to_next_day(self):
 
         self.current_day += timedelta(days=1)
-        self.day_display_label.config(text=self.current_day.strftime("%d/%m/%Y"))
-        self.update_schedule_display()
+        new_day = self.current_day.strftime("%d/%m/%Y")
+        self.day_display_label.config(text=new_day)
+        daily_schedule = schedule_data.get(new_day, [])
 
-    def update_schedule_display(self):
-        
-        today = date.today()
-        current_day = today.strftime("%d/%m/%Y") 
-    
-        schedule_data = {
-            f"{current_day}": [("16:00 - 17:00", "Code Interview"), ("16:00 - 17.00", "Meeting"), ("14:00 - 15:00", "Code Review")],
-            "07/12/2024": [("08:00", "Exercise"), ("09:30", "Team Standup"), ("11:00", "Project Planning"), 
-                        ("13:00", "Lunch"), ("15:00", "Team Sync"), ("17:00", "Wrap Up Meeting"), 
-                        ("18:00", "Personal Study")],
-        
-        }
+        display_activities(self,[self.left_frame,self.right_frame],daily_schedule,self.activity_labels)
 
-       
-        self.activity_labels = []
-        
-
-        
-
-
-        daily_schedule = schedule_data.get(self.current_day.strftime("%d/%m/%Y"), [])
-        print(daily_schedule , self.current_day)     
-        for idx, (time, activity) in enumerate(daily_schedule[:10]):
-
-            target_frame = self.left_frame if idx < 6 else self.right_frame
-            row = idx if idx < 6 else idx - 6 
-
-            label_text = f"{time}   {activity}"
-            label = ttk.Label(target_frame, text=label_text, font=("Verdana", 12), background="red")
-            label.grid(row=row, column=0, sticky="w", pady=10,padx=5)
-
-            activity_labels.append(label)
                 
         
 week_days = {0 : "Mon" , 1 : "Tue" , 2 : "Wed" , 3 : "Thu" , 4 : "Fri" , 5 : "Sat" , 6 : "Sun" }
@@ -141,6 +132,18 @@ def open_daiy_plan_window():
     extra_window = week_plan_window()
   
 
+
+def display_activities(self, frame, activities,list_activity):
+    
+    for label in list_activity:
+        label.destroy()
+    list_activity.clear()   
+    for idx, (time, activity) in enumerate(activities[:10]):
+        target_frame = frame[0] if idx < 6 else frame[1]
+        row = idx if idx < 6 else idx - 6
+        label = ttk.Label(target_frame, text=f"{time} {activity}", font=("Verdana", 12), background="red")
+        label.grid(row=row, column=0, sticky="w", pady=10, padx=5)
+        list_activity.append(label)
 
 root = Tk()
 root.title("DEEP WORK ASSISTANT")
@@ -216,19 +219,8 @@ def highlight_current_activity():
 
 
 
-today = date.today()
-current_day = today.strftime("%d/%m/%Y") 
-
-schedule_data = {
-    f"{current_day}": [("16:00 - 17:00", "Code Interview"), ("16:00 - 17.00", "Meeting"), ("14:00 - 15:00", "Code Review")],
-    "07/12/2024": [("08:00", "Exercise"), ("09:30", "Team Standup"), ("11:00", "Project Planning"), 
-                   ("13:00", "Lunch"), ("15:00", "Team Sync"), ("17:00", "Wrap Up Meeting"), 
-                   ("18:00", "Personal Study")],
-   
-}
 
 
-activity_labels = []  # References daily plan Labels 
 
 left_frame = ttk.Frame(root)
 left_frame.grid(row=1, column=0, sticky="nsew", padx=10,pady=5)
@@ -236,20 +228,12 @@ left_frame.grid(row=1, column=0, sticky="nsew", padx=10,pady=5)
 right_frame = ttk.Frame(root)
 right_frame.grid(row=1, column=1, sticky="nsew", padx=10,pady=5)
 
-
-daily_schedule = schedule_data.get(current_day, [])
-
-for idx, (time, activity) in enumerate(daily_schedule[:10]):
-
-    target_frame = left_frame if idx < 6 else right_frame
-    row = idx if idx < 6 else idx - 6 
-
-    label_text = f"{time}   {activity}"
-    label = ttk.Label(target_frame, text=label_text, font=("Verdana", 12), background="red")
-    label.grid(row=row, column=0, sticky="w", pady=10,padx=5)
-
-    activity_labels.append(label)
+daily_schedule = schedule_data.get(today.strftime("%d/%m/%Y"), [])
+display_activities(root,[left_frame,right_frame],daily_schedule,activity_labels)
 highlight_current_activity()
+
+
+
 """ upper_frame = Label(root, background="red", text ="ROSSO" )
 lower_frame = Label(root, background="blue", text ="BLUE" )
 upper_frame.grid(column=1, row=0,sticky="nswe")
