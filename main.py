@@ -1,5 +1,5 @@
 from tkinter import *
-from tkinter import ttk
+from tkinter import ttk,messagebox
 from datetime import date, datetime, timedelta
 import tkinter as tk
 from PIL import Image, ImageTk
@@ -154,8 +154,31 @@ class add_activity_window(tk.Toplevel):
         def clear_entry(event, entry):
             entry.delete(0, END)
         
+        def validate_time(self):
+            start = start_time.get()
+            end = end_time.get()
+    
+            if time_options.index(start) >= time_options.index(end):
+                messagebox.showerror("Error", "Invalid Time")
+            
+
+
+        time_options = []
+        for hour in range(24):
+            for minute in [0, 30]:
+                time_options.append(f"{hour:02}:{minute:02}")
         
         
+        start_time = ttk.Combobox(self, values=time_options, state="readonly", width=10)
+        start_time.grid(row=2, column=1, padx=10, pady=10,sticky="nwse")
+        start_time.current(0)  # Imposta il valore iniziale
+
+        # Etichetta e menu a tendina per l'ora di fine
+        
+        end_time = ttk.Combobox(self, values=time_options, state="readonly", width=10)
+        end_time.grid(row=2, column=2, padx=10, pady=10,sticky="nwse")
+        end_time.current(0)  # Imposta il valore iniziale
+        end_time.bind("<<ComboboxSelected>>", validate_time)
         
         
 week_days = {0 : "Mon" , 1 : "Tue" , 2 : "Wed" , 3 : "Thu" , 4 : "Fri" , 5 : "Sat" , 6 : "Sun" }
@@ -174,10 +197,13 @@ def start_session():
     
     
 def open_daiy_plan_window():
-    root.grab_set()
+    root.withdraw()
     extra_window = week_plan_window()
-  
-
+    extra_window.protocol("WM_DELETE_WINDOW", lambda: reopen_window(extra_window) )
+    
+def reopen_window(window):
+    window.destroy() 
+    root.deiconify()
 
 def display_activities(self, frame, activities,list_activity):
     
