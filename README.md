@@ -7,7 +7,6 @@
 - **Distraction Blocking**: Automatically block unauthorized apps, files, and websites during focus sessions for uninterrupted work.
 - **User-Friendly Design**: A sleek and intuitive interface built with Tkinter, featuring a visually appealing planner and seamless navigation.
 - **Persistent Data**: Save your schedules and preferences in JSON format for continuity across sessions.
-- **Customizable Settings**: Tailor focus sessions, time blocks, and task priorities to your workflow.
 
 ## 🛠️ Technologies
 - **Languages**: Python
