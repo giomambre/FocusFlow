@@ -1,0 +1,60 @@
+{
+ "fixed_activities": [
+  {
+   "id": "daily_standup",
+   "time_range": "08:00 - 09:00",
+   "title": "Daily Standup",
+   "recurrence": "d",
+   "end_date": "11/12/2024"
+  },
+  {
+   "id": "weekly_sync",
+   "time_range": "10:00 - 11:00",
+   "title": "Weekly Sync",
+   "recurrence": "w",
+   "day_of_week": "Tuesday",
+   "end_date": null
+  },
+  {
+   "id": "monthly_meeting",
+   "time_range": "10:00 - 11:00",
+   "title": "Monthly Meeting",
+   "recurrence": "m",
+   "day_of_week": "Tuesday",
+   "week_of_month": 2,
+   "end_date": "12/12/2024"
+  }
+ ],
+ "specific_days": [
+  {
+   "date": "12/08/2024",
+   "activities": [
+    {
+     "time_range": "10:00 - 11:00",
+     "title": "Weekly Sync"
+    },
+    {
+     "time_range": "14:00 - 15:00",
+     "title": "Special Event"
+    }
+   ]
+  },
+  {
+   "date": "13/08/2024",
+   "activities": [
+    {
+     "time_range": "10:00 - 11:00",
+     "title": "Weekly Sync"
+    },
+    {
+     "time_range": "14:00 - 15:00",
+     "title": "Special Event"
+    },
+    {
+     "time_range": "15:00 - 16:00",
+     "title": "Non special Event"
+    }
+   ]
+  }
+ ]
+}
