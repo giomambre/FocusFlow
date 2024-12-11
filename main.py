@@ -4,17 +4,54 @@ from datetime import date, datetime, timedelta
 import tkinter as tk
 from PIL import Image, ImageTk
 import json
+
 today = date.today()
-activity_labels = [] # # References daily plan Labels for the main window
+activity_labels = [] # References daily plan Labels for the main window
 
 
-schedule_data = {
-            f"{today.strftime("%d/%m/%Y")}": [("16:00 - 17:00", "Code Interview"), ("16:00 - 17.00", "Meeting"), ("14:00 - 15:00", "Code Review")],
-            "02/12/2024": [("08:00", "Exercise"), ("09:30", "Team Standup"), ("11:00", "Project Planning"), 
-                        ("13:00", "Lunch"), ("15:00", "Team Sync"), ("17:00", "Wrap Up Meeting"), 
-                        ("18:00", "Personal Study")],
+def add_recurrence_in_json(activity,formatted_date):
+    with open('schedule_data.json', 'r') as f:
+        schedule_data = json.load(f)
+    simplified_activities = {"title": activity["title"], "time_range": activity["time_range"]}
+    
+
+    
+    specific_day = next((day for day in schedule_data.get("specific_days", []) if day["date"] == formatted_date), None)
+
+    if activity["title"] not in [act["title"] for act in specific_day["activities"]]:
+        specific_day["activities"].append(simplified_activities)
+        with open('schedule_data.json', 'w') as f:
+            json.dump(schedule_data, f, indent=4)
+
+   
+
+   
+
+def filter_activities_by_date(date_to_check):
+    with open('schedule_data.json',"r") as f:
+        schedule_data = json.load(f)
+    specific_day = schedule_data["specific_days"]
+    formatted_date = date_to_check.strftime("%d/%m/%Y")
+    specific_day = next((day for day in schedule_data.get("specific_days", []) if day["date"] == formatted_date), None)
+
+    activities = []
+    
+    for activity in schedule_data.get("fixed_activities", []):
         
-        }
+
+        if activity["recurrence"] == "d" and (not activity.get("end_date") or date_to_check <= datetime.strptime(activity["end_date"], "%d/%m/%Y").date()) and activities:
+            add_recurrence_in_json(activity, formatted_date)
+        elif activity["recurrence"] == "w" and date_to_check.strftime("%A") == activity.get("day_of_week"):
+            add_recurrence_in_json(activity, formatted_date)
+        elif activity["recurrence"] == "m" and date_to_check.strftime("%A") == activity.get("day_of_week") and date_to_check.day // 7 + 1 == activity.get("week_of_month"):
+            add_recurrence_in_json(activity, formatted_date)
+    f.close()
+    with open('schedule_data.json',"r") as f:
+        schedule_data = json.load(f)
+    if specific_day:
+        activities.extend(specific_day["activities"])            
+    sort_activities_in_json()
+    return [(activity["time_range"], activity["title"]) for activity in activities]
 
 
 class week_plan_window(tk.Toplevel):
@@ -86,8 +123,8 @@ class week_plan_window(tk.Toplevel):
         self.right_frame.grid(row=3, column=2, sticky="nsew", columnspan=2, padx=10,pady=5)
 
         self.activity_labels = []
-        daily_schedule = schedule_data.get(self.current_day.strftime("%d/%m/%Y"), [])
-
+        daily_schedule = filter_activities_by_date(self.current_day)
+        sort_activities_in_json()
         display_activities(self,[self.left_frame,self.right_frame],daily_schedule,self.activity_labels)
 
         
@@ -97,7 +134,7 @@ class week_plan_window(tk.Toplevel):
             self.current_day = previous_day
         new_day = self.current_day.strftime("%d/%m/%Y")
         self.day_display_label.config(text=new_day)
-        daily_schedule = schedule_data.get(new_day, [])
+        daily_schedule = filter_activities_by_date(self.current_day)
 
         display_activities(self,[self.left_frame,self.right_frame],daily_schedule,self.activity_labels)
 
@@ -106,18 +143,19 @@ class week_plan_window(tk.Toplevel):
         self.current_day += timedelta(days=1)
         new_day = self.current_day.strftime("%d/%m/%Y")
         self.day_display_label.config(text=new_day)
-        daily_schedule = schedule_data.get(new_day, [])
+        daily_schedule = filter_activities_by_date(self.current_day)
 
         display_activities(self,[self.left_frame,self.right_frame],daily_schedule,self.activity_labels)
 
     def open_add_activity_window(self):    
         self.grab_set()
-        extra_window = add_activity_window()
+        extra_window = add_activity_window(self.current_day)
         
         
 class add_activity_window(tk.Toplevel):
-    def __init__(self):
+    def __init__(self,current_day):
         super().__init__()
+        self.current_day = current_day  # Save the current_day passed from the parent window
         self.title("FOCUS FLOW")
         self.geometry("700x500+610+290")
         self.minsize(500,400)
@@ -126,7 +164,13 @@ class add_activity_window(tk.Toplevel):
         self.rowconfigure(1,weight=1,uniform="a")
         self.activity_labels = []
         self.rowconfigure(2,weight=1,uniform="a")
-        self.rowconfigure(3,weight=4,uniform="a")
+        self.rowconfigure(3,weight=1,uniform="a")
+        self.rowconfigure(4,weight=1,uniform="a")
+        self.rowconfigure(5,weight=1,uniform="a")
+
+
+        self.rowconfigure(6,weight=1,uniform="a")
+    
         self.grab_set()  #To make the root window untouchable
         self.set_gui()  
         
@@ -181,7 +225,86 @@ class add_activity_window(tk.Toplevel):
         end_time.bind("<<ComboboxSelected>>", validate_time)
         
         
+        confirm_button = Button(self,text = "ADD", command=self.insert_new_activity)
+        confirm_button.grid(row=6, column=1, padx=10, pady=10,sticky="nwse",columnspan=3)
+
+        
+        
+    def insert_new_activity(self):
+    # Recupera i valori inseriti dall'utente
+        with open('schedule_data.json',"r") as f:
+            schedule_data = json.load(f)
+        activity_title = self.children["!entry"].get()
+        start_time = self.children["!combobox"].get()
+        end_time = self.children["!combobox2"].get()
+
+        # Verifica che i campi siano validi
+        if not activity_title or activity_title == "Title":
+            messagebox.showerror("Error", "Please enter a valid title for the activity.")
+            return
+
+        if not start_time or not end_time:
+            messagebox.showerror("Error", "Please select valid time ranges for the activity.")
+            return
+
+        
+
+        new_activity = {
+            "title": activity_title,
+            "time_range": f"{start_time} - {end_time}"
+        }
+
+        formatted_date = self.current_day.strftime("%d/%m/%Y")
+        specific_day = next((day for day in schedule_data.get("specific_days", []) if day["date"] == formatted_date), None)
+
+        if specific_day:
+            specific_day["activities"].append(new_activity)
+        else:
+            schedule_data["specific_days"].append({
+                "date": formatted_date,
+                "activities": [new_activity]
+            })
+
+        with open('schedule_data.json', 'w') as f:
+            json.dump(schedule_data, f, indent=4)
+
+        messagebox.showinfo("Success", "Activity added successfully!")
+
+        
+        
+        sort_activities_in_json()
+        
+
+        
+            
 week_days = {0 : "Mon" , 1 : "Tue" , 2 : "Wed" , 3 : "Thu" , 4 : "Fri" , 5 : "Sat" , 6 : "Sun" }
+
+
+
+def sort_activities_in_json():
+   
+    try:
+        with open("schedule_data.json", 'r') as file:
+            schedule_data = json.load(file)
+
+        def extract_start_time(activity):
+            start_time_str = activity["time_range"].split(" - ")[0]
+            return datetime.strptime(start_time_str, "%H:%M")
+
+        for specific_day in schedule_data.get("specific_days", []):
+            specific_day["activities"] = sorted(
+                specific_day["activities"], key=extract_start_time
+            )
+
+        with open("schedule_data.json", 'w') as file:
+            json.dump(schedule_data, file, indent=4)
+
+
+    except Exception as e:
+        print(f"Errore durante l'ordinamento delle attività: {e}")
+
+
+
 
 def get_time():
     curr_time = datetime.now().strftime("%H:%M:%S")
@@ -205,7 +328,7 @@ def reopen_window(window):
     window.destroy() 
     root.deiconify()
 
-def display_activities(self, frame, activities,list_activity):
+def display_activities(self,frame, activities,list_activity):
     
     for label in list_activity:
         label.destroy()
@@ -300,7 +423,7 @@ left_frame.grid(row=1, column=0, sticky="nsew", padx=10,pady=5)
 right_frame = ttk.Frame(root)
 right_frame.grid(row=1, column=1, sticky="nsew", padx=10,pady=5)
 
-daily_schedule = schedule_data.get(today.strftime("%d/%m/%Y"), [])
+daily_schedule = filter_activities_by_date(today)
 display_activities(root,[left_frame,right_frame],daily_schedule,activity_labels)
 highlight_current_activity()
 
