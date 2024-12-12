@@ -8,7 +8,6 @@ import json
 today = date.today()
 activity_labels = [] # References daily plan Labels for the main window
 
-
 def add_recurrence_in_json(activity, formatted_date):
     
     with open('schedule_data.json', 'r') as f:
