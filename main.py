@@ -9,49 +9,68 @@ today = date.today()
 activity_labels = [] # References daily plan Labels for the main window
 
 
-def add_recurrence_in_json(activity,formatted_date):
+def add_recurrence_in_json(activity, formatted_date):
+    
     with open('schedule_data.json', 'r') as f:
         schedule_data = json.load(f)
-    simplified_activities = {"title": activity["title"], "time_range": activity["time_range"]}
-    
 
-    
+    new_activity = {"title": activity["title"], "time_range": activity["time_range"]}
+
     specific_day = next((day for day in schedule_data.get("specific_days", []) if day["date"] == formatted_date), None)
+    if not specific_day:
+        specific_day = {"date": formatted_date, "activities": []}
+        schedule_data["specific_days"].append(specific_day)
+
 
     if activity["title"] not in [act["title"] for act in specific_day["activities"]]:
-        specific_day["activities"].append(simplified_activities)
-        with open('schedule_data.json', 'w') as f:
-            json.dump(schedule_data, f, indent=4)
+        specific_day["activities"].append(new_activity)
 
-   
+    # Save the updated data back to the file
+    with open('schedule_data.json', 'w') as f:
+        json.dump(schedule_data, f, indent=4)
 
-   
 
 def filter_activities_by_date(date_to_check):
-    with open('schedule_data.json',"r") as f:
-        schedule_data = json.load(f)
-    specific_day = schedule_data["specific_days"]
     formatted_date = date_to_check.strftime("%d/%m/%Y")
-    specific_day = next((day for day in schedule_data.get("specific_days", []) if day["date"] == formatted_date), None)
-
-    activities = []
+    print(formatted_date)
+    with open('schedule_data.json', "r") as f:
+        schedule_data = json.load(f)
     
+    specific_day = next((day for day in schedule_data.get("specific_days", []) if day["date"] == formatted_date), None)
+    print(specific_day)
+    if not specific_day:
+        specific_day = {"date": formatted_date, "activities": []}
+        schedule_data["specific_days"].append(specific_day)
+        with open('schedule_data.json', "w") as f:
+            json.dump(schedule_data, f, indent=4)
     for activity in schedule_data.get("fixed_activities", []):
         
-
-        if activity["recurrence"] == "d" and (not activity.get("end_date") or date_to_check <= datetime.strptime(activity["end_date"], "%d/%m/%Y").date()) and activities:
+        if activity["recurrence"] == "d" and (not activity.get("end_date") or date_to_check <= datetime.strptime(activity["end_date"], "%d/%m/%Y").date()):
             add_recurrence_in_json(activity, formatted_date)
+        
         elif activity["recurrence"] == "w" and date_to_check.strftime("%A") == activity.get("day_of_week"):
             add_recurrence_in_json(activity, formatted_date)
-        elif activity["recurrence"] == "m" and date_to_check.strftime("%A") == activity.get("day_of_week") and date_to_check.day // 7 + 1 == activity.get("week_of_month"):
+
+        elif activity["recurrence"] == "m" and date_to_check.strftime("%A") == activity.get("day_of_week") and (date_to_check.day - 1) // 7 + 1 == activity.get("week_of_month"):
             add_recurrence_in_json(activity, formatted_date)
-    f.close()
-    with open('schedule_data.json',"r") as f:
+    
+    # Reload the updated schedule data to include added recurrences
+    with open('schedule_data.json', "r") as f:
         schedule_data = json.load(f)
+        
+    
+    specific_day = next((day for day in schedule_data.get("specific_days", []) if day["date"] == formatted_date), None)
     if specific_day:
-        activities.extend(specific_day["activities"])            
-    sort_activities_in_json()
-    return [(activity["time_range"], activity["title"]) for activity in activities]
+        sort_activities_in_json()
+        activities = specific_day["activities"]
+        return [(activity["time_range"], activity["title"]) for activity in activities]
+    else:
+        return []
+    
+    
+    
+    
+
 
 
 class week_plan_window(tk.Toplevel):
@@ -135,7 +154,7 @@ class week_plan_window(tk.Toplevel):
         new_day = self.current_day.strftime("%d/%m/%Y")
         self.day_display_label.config(text=new_day)
         daily_schedule = filter_activities_by_date(self.current_day)
-
+        
         display_activities(self,[self.left_frame,self.right_frame],daily_schedule,self.activity_labels)
 
     def go_to_next_day(self):
@@ -328,17 +347,28 @@ def reopen_window(window):
     window.destroy() 
     root.deiconify()
 
-def display_activities(self,frame, activities,list_activity):
-    
+def display_activities(self, frame, daily_schedule, list_activity):
     for label in list_activity:
         label.destroy()
-    list_activity.clear()   
-    for idx, (time, activity) in enumerate(activities[:10]):
+    list_activity.clear()
+
+    if not daily_schedule:  # empty day
+        label = ttk.Label(frame[0], text="No activities scheduled", font=("Verdana", 12), background="lightgray")
+        label.grid(row=0, column=0, sticky="w", pady=10, padx=5)
+        list_activity.append(label)
+
+        add_button = ttk.Button(frame[0], text="Add Activity", command=self.open_add_activity_window)
+        add_button.grid(row=1, column=0, pady=10, padx=5)
+        list_activity.append(add_button)
+        return
+
+    for idx, (time, activity) in enumerate(daily_schedule[:10]):
         target_frame = frame[0] if idx < 6 else frame[1]
         row = idx if idx < 6 else idx - 6
         label = ttk.Label(target_frame, text=f"{time} {activity}", font=("Verdana", 12), background="red")
         label.grid(row=row, column=0, sticky="w", pady=10, padx=5)
         list_activity.append(label)
+
 
 root = Tk()
 root.title("FOCUS FLOW")
@@ -397,7 +427,7 @@ activity_listbox["yscrollcommand"] = scrollbar_activity.set
 #Today Plan
 
 def highlight_current_activity(): 
-   
+    
     current_time = datetime.now().strftime("%H:%M")  
 
     for idx, (time_range, activity) in enumerate(daily_schedule):
@@ -425,7 +455,7 @@ right_frame.grid(row=1, column=1, sticky="nsew", padx=10,pady=5)
 
 daily_schedule = filter_activities_by_date(today)
 display_activities(root,[left_frame,right_frame],daily_schedule,activity_labels)
-highlight_current_activity()
+#highlight_current_activity()
 
 
 
