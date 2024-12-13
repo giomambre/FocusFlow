@@ -6,15 +6,17 @@ from PIL import Image, ImageTk
 import json
 
 today = date.today()
-activity_labels = [] # References daily plan Labels for the main window
 
 def add_recurrence_in_json(activity, formatted_date):
     
     with open('schedule_data.json', 'r') as f:
         schedule_data = json.load(f)
 
-    new_activity = {"title": activity["title"], "time_range": activity["time_range"]}
-
+    new_activity = {
+        "title": activity["title"],
+        "time_range": activity["time_range"],
+        "is_fixed": True  
+    }
     specific_day = next((day for day in schedule_data.get("specific_days", []) if day["date"] == formatted_date), None)
     if not specific_day:
         specific_day = {"date": formatted_date, "activities": []}
@@ -31,12 +33,10 @@ def add_recurrence_in_json(activity, formatted_date):
 
 def filter_activities_by_date(date_to_check):
     formatted_date = date_to_check.strftime("%d/%m/%Y")
-    print(formatted_date)
     with open('schedule_data.json', "r") as f:
         schedule_data = json.load(f)
     
     specific_day = next((day for day in schedule_data.get("specific_days", []) if day["date"] == formatted_date), None)
-    print(specific_day)
     if not specific_day:
         specific_day = {"date": formatted_date, "activities": []}
         schedule_data["specific_days"].append(specific_day)
@@ -62,16 +62,11 @@ def filter_activities_by_date(date_to_check):
     if specific_day:
         sort_activities_in_json()
         activities = specific_day["activities"]
-        return [(activity["time_range"], activity["title"]) for activity in activities]
+        return [(activity["time_range"], activity["title"], activity.get("is_fixed", False)) for activity in activities]    
     else:
         return []
     
     
-    
-    
-
-
-
 class week_plan_window(tk.Toplevel):
     def __init__(self):
         super().__init__()
@@ -144,7 +139,7 @@ class week_plan_window(tk.Toplevel):
         daily_schedule = filter_activities_by_date(self.current_day)
         sort_activities_in_json()
         display_activities(self,[self.left_frame,self.right_frame],daily_schedule,self.activity_labels)
-
+    
         
     def go_to_prev_day(self):
         previous_day = self.current_day - timedelta(days=1)
@@ -168,7 +163,10 @@ class week_plan_window(tk.Toplevel):
     def open_add_activity_window(self):    
         self.grab_set()
         extra_window = add_activity_window(self.current_day)
+        extra_window.wait_window()
         
+        daily_schedule = filter_activities_by_date(self.current_day)
+        display_activities(self,[self.left_frame,self.right_frame],daily_schedule,self.activity_labels)
         
 class add_activity_window(tk.Toplevel):
     def __init__(self,current_day):
@@ -291,11 +289,11 @@ class add_activity_window(tk.Toplevel):
         
         
         sort_activities_in_json()
+        self.destroy()
         
 
         
             
-week_days = {0 : "Mon" , 1 : "Tue" , 2 : "Wed" , 3 : "Thu" , 4 : "Fri" , 5 : "Sat" , 6 : "Sun" }
 
 
 
@@ -332,11 +330,7 @@ def get_time():
     clock.config(text = timevar)
     clock.after(200,get_time)
 
-
-def start_session():
-    open_week_plan_button.config(bg='black')
-    
-    
+        
 def open_daiy_plan_window():
     root.withdraw()
     extra_window = week_plan_window()
@@ -361,10 +355,11 @@ def display_activities(self, frame, daily_schedule, list_activity):
         list_activity.append(add_button)
         return
 
-    for idx, (time, activity) in enumerate(daily_schedule[:10]):
+    for idx, (time, activity,is_fixed) in enumerate(daily_schedule[:10]):
         target_frame = frame[0] if idx < 6 else frame[1]
         row = idx if idx < 6 else idx - 6
-        label = ttk.Label(target_frame, text=f"{time} {activity}", font=("Verdana", 12), background="red")
+        bg_color = "lightblue" if is_fixed else "#e74c3c" 
+        label = ttk.Label(target_frame, text=f"{time} {activity}", font=("Verdana", 12), background=bg_color)
         label.grid(row=row, column=0, sticky="w", pady=10, padx=5)
         list_activity.append(label)
 
@@ -374,7 +369,6 @@ root.title("FOCUS FLOW")
 root.geometry("700x600+610+220")
 root.config(bg="black")
 root.minsize(600,500)
-#root.maxsize(600,500)
 
 #Grid Layout configuration
 root.columnconfigure((0,1),weight=1, uniform="a")
@@ -405,10 +399,6 @@ open_week_plan_button = Button(root,command=start_session, image = open_week_pla
 open_week_plan_button.grid(column=1,row=2,sticky="nwse",padx = 20 ,pady=20)
 
 
-#Label list Activity
-
-""" activity_label = Label(root, text="Next Activities:", font = ("Verdana", 15,"bold"))
-activity_label.grid(row=1, column=0,sticky="sw",padx=5,pady=10) """
 
 #Next Activity to Do
 
@@ -424,6 +414,9 @@ activity_listbox["yscrollcommand"] = scrollbar_activity.set
 
 
 #Today Plan
+
+activity_labels = [] # References daily plan Labels for the main window
+
 
 def highlight_current_activity(): 
     
@@ -442,10 +435,6 @@ def highlight_current_activity():
     root.after(60000, highlight_current_activity)
 
 
-
-
-
-
 left_frame = ttk.Frame(root)
 left_frame.grid(row=1, column=0, sticky="nsew", padx=10,pady=5)
 
@@ -454,14 +443,7 @@ right_frame.grid(row=1, column=1, sticky="nsew", padx=10,pady=5)
 
 daily_schedule = filter_activities_by_date(today)
 display_activities(root,[left_frame,right_frame],daily_schedule,activity_labels)
-#highlight_current_activity()
 
-
-
-""" upper_frame = Label(root, background="red", text ="ROSSO" )
-lower_frame = Label(root, background="blue", text ="BLUE" )
-upper_frame.grid(column=1, row=0,sticky="nswe")
-lower_frame.grid(column=0, row=0,sticky="nswe") """
 
 
 root.mainloop()
