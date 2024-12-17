@@ -6,7 +6,7 @@
 To address this challenge, I developed a desktop application designed to improve productivity by integrating deep work principles with intuitive task management.
 Whether you're tackling a complex project or striving to minimize distractions, FocusFlow empowers you to stay on track, optimize your focus, and achieve your goals effectively."*
 
-## ⚙️ What I'm Working on right now ##:
+## ⚙️ What I'm Working on right now :
 - Recurring activities
 - Improved blocking sites page 
 - A Gui (because the current one is not even a Gui) at the moment I'm working mainly on the backend of the app, so the frontend is very bad, and I know it
