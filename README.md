@@ -8,7 +8,7 @@ Whether you're tackling a complex project or striving to minimize distractions, 
 
 ## ⚙️ What I'm working on right now 
 - Recurring activities
-- Improved blocking sites page 
+- Improved blocked sites page 
 - A Gui (because the current one is not even a Gui) at the moment I'm working mainly on the backend of the app, so the frontend is very bad, and I know it
 - **Future Ideas**: Weekly Summary of deep work hours, Syncing with iPhone to enable Do Not Disturb while being in a Session
 
