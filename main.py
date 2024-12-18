@@ -6,6 +6,7 @@ from PIL import Image, ImageTk
 import json
 
 today = date.today()
+add_logo_img = Image.open("./img/add_button.png").resize((35,35))
 
 def add_recurrence_in_json(activity, formatted_date):
     
@@ -116,8 +117,7 @@ class week_plan_window(tk.Toplevel):
         
     
 
-        add_day_img = Image.open("./img/add_button.png").resize((35,35))
-        self.add_day_img_tk = ImageTk.PhotoImage(add_day_img)
+        self.add_day_img_tk = ImageTk.PhotoImage(add_logo_img)
         add_button = Button(self , image = self.add_day_img_tk, width="50", height="50",borderwidth=0, command=self.open_add_activity_window )
         add_button.grid(column=4,row=2,sticky="nsw",padx = 5,pady=5)
         
@@ -211,8 +211,7 @@ class add_activity_window(tk.Toplevel):
         name_activity_entry.grid(row = 1, column= 1, pady=10 , padx=10,sticky="nswe",columnspan=3)
         name_activity_entry.bind("<Button-1>", lambda event: clear_entry(event, name_activity_entry))
         
-        def clear_entry(event, entry):
-            entry.delete(0, END)
+
         
         def validate_time(self):
             start = start_time.get()
@@ -292,8 +291,114 @@ class add_activity_window(tk.Toplevel):
         self.destroy()
         
 
+    
+
+
+class blocked_sites_window(tk.Toplevel):
+    def __init__(self):
+        super().__init__()
+        self.title("FOCUS FLOW")
+        self.geometry("700x500+610+290")
+        self.minsize(500, 400)
+        self.columnconfigure((0, 1, 2, 3, 4), weight=1, uniform="a")
+        self.rowconfigure(0, weight=1, uniform="a")
+        self.rowconfigure(1, weight=1, uniform="a")
+        self.activity_labels = []
+        self.rowconfigure(2, weight=1, uniform="a")
+        self.rowconfigure(3, weight=4, uniform="a")
+        self.grab_set()  # To make the root window untouchable
+        self.set_gui()
+
+    def set_gui(self):
+        # HEAD
         
-            
+        nav_bar_img = Image.open("./img/9293128.png").resize((35, 35))
+        self.nav_bar_img_tk = ImageTk.PhotoImage(nav_bar_img)
+        
+
+        nav_bar_button = Button(self, image=self.nav_bar_img_tk, width="50", height="50", bg="white", borderwidth=0)
+        nav_bar_button.grid(column=0, row=0, sticky="nws", padx=5, pady=5)
+        clock = Label(self,text="MANAGE BLOCKED SITES",font=("Verdana", 17), bg="#e84118", fg="#353b48")
+        clock.grid(column=0, row=0, columnspan=5, sticky="nwse", ipadx="20", ipady="20")
+        nav_bar_button.lift()
+
+       
+        try:
+            with open("blocked_sites.json", "r") as f:
+                sites_data = json.load(f)
+        except FileNotFoundError:
+            sites_data = {"sites": []}
+
+        sites = [site["name"] for site in sites_data.get("sites", [])]
+
+        sites_list = tk.StringVar(value=sites)
+
+        sites_listbox = tk.Listbox(
+            self,
+            listvariable=sites_list,
+            height=6,
+            selectmode="extended",
+            font=("Verdana", 12, "bold"),
+            bg="#f0f8ff",
+            fg="#333333",
+            bd=2,
+            relief="solid",
+            highlightthickness=0,
+            selectbackground="#ffa500",selectforeground="white",activestyle="none",
+        )
+        sites_listbox.grid(row=2, column=0, columnspan=5, rowspan=2, sticky="nsew", padx=10, pady=10)
+
+        scrollbar_sites = ttk.Scrollbar(self, orient="vertical", command=sites_listbox.yview)
+        scrollbar_sites.grid(row=2, column=4, rowspan=2, sticky="nse")
+
+        sites_listbox["yscrollcommand"] = scrollbar_sites.set
+
+        name_site = tk.StringVar()
+        name_site_entry = tk.Entry(
+            self, textvariable=name_site, font=("Verdana", 14), bg="#ffffff", borderwidth=0
+        )
+        name_site_entry.insert(0, "Name Site")
+        name_site_entry.grid(row=1, column=0, pady=10, padx=10, sticky="nswe", columnspan=3)
+        name_site_entry.bind("<Button-1>", lambda event: self.clear_entry(event, name_site_entry))
+
+        
+        
+        self.add_site_img_tk = ImageTk.PhotoImage(add_logo_img)
+       
+
+        add_button = Button(self,image=self.add_site_img_tk,width="50",height="50",borderwidth=0,command=lambda: self.add_site_in_json(name_site.get(), sites_listbox),)
+        add_button.grid(column=3, row=1, sticky="nsw", padx=5, pady=5)
+
+    def clear_entry(self, event, entry):
+        entry.delete(0, tk.END)
+
+    def add_site_in_json(self, name, listbox):
+        if not name.strip():  # Controlla che il nome non sia vuoto
+            messagebox.showerror("Error", "The entry can't be Empty!")
+            return
+
+        try:
+            with open("blocked_sites.json", "r") as f:
+                sites_data = json.load(f)
+        except FileNotFoundError:
+            sites_data = {"sites": []}
+
+        site = next((site for site in sites_data.get("sites", []) if site["name"] == name), None)
+
+        if not site:
+            new_site = {"name": name}
+            sites_data["sites"].append(new_site)
+
+            with open("blocked_sites.json", "w") as f:
+                json.dump(sites_data, f, indent=4)
+
+            listbox.insert(tk.END, name)
+            messagebox.showinfo("Success",f'Site "{name}" Added')
+        else:
+            messagebox.showwarning("Sorry", "Site Already in the File")
+
+
+                    
 
 
 
@@ -326,10 +431,12 @@ def get_time():
     curr_time = datetime.now().strftime("%H:%M:%S")
     today = date.today()
     curr_day = today.strftime(" %d/%m/%Y ")
-    timevar = week_days[today.weekday()] + ", " +curr_time  + "\n"  + curr_day 
+    timevar = today.strftime("%a") + ", " +curr_time  + "\n"  + curr_day 
     clock.config(text = timevar)
     clock.after(200,get_time)
 
+def clear_entry(event, entry):
+    entry.delete(0, END)
         
 def open_daiy_plan_window():
     root.withdraw()
@@ -345,14 +452,13 @@ def display_activities(self, frame, daily_schedule, list_activity):
         label.destroy()
     list_activity.clear()
 
-    if not daily_schedule:  # empty day
+    if not daily_schedule and not self == root :  # empty day
         label = ttk.Label(frame[0], text="No activities scheduled", font=("Verdana", 12), background="lightgray")
         label.grid(row=0, column=0, sticky="w", pady=10, padx=5)
         list_activity.append(label)
-
+    
         add_button = ttk.Button(frame[0], text="Add Activity", command=self.open_add_activity_window)
         add_button.grid(row=1, column=0, pady=10, padx=5)
-        list_activity.append(add_button)
         return
 
     for idx, (time, activity,is_fixed) in enumerate(daily_schedule[:10]):
@@ -391,14 +497,17 @@ nav_bar_button.lift()
 get_time()
 
 
-#Set Week Plan Button
+def open_blocked_sites():
+    root.withdraw()
+    extra_window = blocked_sites_window()
+    extra_window.protocol("WM_DELETE_WINDOW", lambda: reopen_window(extra_window) )
+    
+#Open Blocked Sites Button
 
-open_week_plan_img = Image.open("./img/TEMP_LOGO.png").resize((200,200))
-open_week_plan_img_tk = ImageTk.PhotoImage(open_week_plan_img)
-open_week_plan_button = Button(root,command=start_session, image = open_week_plan_img_tk,  bg="#0F0F0F", width="50", height="50")
+open_week_plan_button = Button(root,command = open_blocked_sites, text = "Open Blocked Sites",  bg="lightgreen", width="50", height="50")
 open_week_plan_button.grid(column=1,row=2,sticky="nwse",padx = 20 ,pady=20)
 
-
+    
 
 #Next Activity to Do
 
@@ -443,7 +552,6 @@ right_frame.grid(row=1, column=1, sticky="nsew", padx=10,pady=5)
 
 daily_schedule = filter_activities_by_date(today)
 display_activities(root,[left_frame,right_frame],daily_schedule,activity_labels)
-
 
 
 root.mainloop()
