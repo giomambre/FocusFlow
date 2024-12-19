@@ -167,6 +167,7 @@ class week_plan_window(tk.Toplevel):
         
         daily_schedule = filter_activities_by_date(self.current_day)
         display_activities(self,[self.left_frame,self.right_frame],daily_schedule,self.activity_labels)
+        display_activities(root,[left_frame,right_frame],daily_schedule,activity_labels)
         
 class add_activity_window(tk.Toplevel):
     def __init__(self,current_day):
@@ -300,7 +301,9 @@ class blocked_sites_window(tk.Toplevel):
         self.title("FOCUS FLOW")
         self.geometry("700x500+610+290")
         self.minsize(500, 400)
-        self.columnconfigure((0, 1, 2, 3, 4), weight=1, uniform="a")
+        self.columnconfigure(0, weight=2, uniform="a")
+
+        self.columnconfigure((1, 2, 3, 4), weight=1, uniform="a")
         self.rowconfigure(0, weight=1, uniform="a")
         self.rowconfigure(1, weight=1, uniform="a")
         self.activity_labels = []
@@ -333,7 +336,7 @@ class blocked_sites_window(tk.Toplevel):
 
         sites_list = tk.StringVar(value=sites)
 
-        sites_listbox = tk.Listbox(
+        self.sites_listbox = tk.Listbox(
             self,
             listvariable=sites_list,
             height=6,
@@ -346,31 +349,64 @@ class blocked_sites_window(tk.Toplevel):
             highlightthickness=0,
             selectbackground="#ffa500",selectforeground="white",activestyle="none",
         )
-        sites_listbox.grid(row=2, column=0, columnspan=5, rowspan=2, sticky="nsew", padx=10, pady=10)
+        self.sites_listbox.grid(row=2, column=0, columnspan=5, rowspan=2, sticky="nsew", padx=10, pady=10)
 
-        scrollbar_sites = ttk.Scrollbar(self, orient="vertical", command=sites_listbox.yview)
+        scrollbar_sites = ttk.Scrollbar(self, orient="vertical", command=self.sites_listbox.yview)
         scrollbar_sites.grid(row=2, column=4, rowspan=2, sticky="nse")
 
-        sites_listbox["yscrollcommand"] = scrollbar_sites.set
+        self.sites_listbox["yscrollcommand"] = scrollbar_sites.set
 
-        name_site = tk.StringVar()
-        name_site_entry = tk.Entry(
-            self, textvariable=name_site, font=("Verdana", 14), bg="#ffffff", borderwidth=0
+        self.name_site = tk.StringVar()
+        self.name_site_entry = tk.Entry(
+            self, textvariable=self.name_site, font=("Verdana", 14), bg="#ffffff", borderwidth=0
         )
-        name_site_entry.insert(0, "Name Site")
-        name_site_entry.grid(row=1, column=0, pady=10, padx=10, sticky="nswe", columnspan=3)
-        name_site_entry.bind("<Button-1>", lambda event: self.clear_entry(event, name_site_entry))
+        self.name_site_entry.insert(0, "Name Site")
+        self.name_site_entry.grid(row=1, column=0, pady=10, padx=10, sticky="nswe", columnspan=2)
+        self.name_site_entry.bind("<Button-1>", lambda event: (clear_entry(event, self.name_site_entry),self.entry_onselect(event)))
 
         
         
         self.add_site_img_tk = ImageTk.PhotoImage(add_logo_img)
        
 
-        add_button = Button(self,image=self.add_site_img_tk,width="50",height="50",borderwidth=0,command=lambda: self.add_site_in_json(name_site.get(), sites_listbox),)
-        add_button.grid(column=3, row=1, sticky="nsw", padx=5, pady=5)
+        self.add_button = Button(self,image=self.add_site_img_tk,width="50",height="50",borderwidth=0,command=lambda: self.add_site_in_json(self.name_site.get(), self.sites_listbox))
+        self.add_button.grid(column=2, row=1, sticky="nsw", padx=5, pady=5)
+        
+        remove_img = Image.open("./img/delete_button.png").resize((40,40))
+        self.remove_img_tk = ImageTk.PhotoImage(remove_img)
+        self.remove_button = Button(self,image=self.remove_img_tk,width="50",height="50",borderwidth=0,state="disabled",command=self.remove_site)
+        self.remove_button.grid(column=3, row=1, sticky="nsw", padx=5, pady=5)
+        
+        
+       
 
-    def clear_entry(self, event, entry):
-        entry.delete(0, tk.END)
+        
+        edit_img = Image.open("./img/edit_button.png").resize((40,40))
+        self.edit_img_tk = ImageTk.PhotoImage(edit_img)
+        self.edit_button = Button(self,image=self.edit_img_tk,width="50",height="50",borderwidth=0,command = self.edit_site,state="disabled")
+        self.edit_button.grid(column=4, row=1, sticky="nsw", padx=5, pady=5)
+        
+        
+        
+        self.sites_listbox.bind('<<ListboxSelect>>', self.listbox_onselect)
+        
+    def listbox_onselect(self,evt):
+        
+        self.edit_button.config(state="normal")
+        self.remove_button.config(state="normal")
+        self.add_button.config(state="disabled")
+        
+    def entry_onselect(self,evt):
+        
+        self.edit_button.config(state="disabled")
+        self.remove_button.config(state="disabled")
+        self.add_button.config(state="normal")
+        
+        
+        
+       
+
+    
 
     def add_site_in_json(self, name, listbox):
         if not name.strip():  # Controlla che il nome non sia vuoto
@@ -397,8 +433,82 @@ class blocked_sites_window(tk.Toplevel):
         else:
             messagebox.showwarning("Sorry", "Site Already in the File")
 
+    def remove_site(self):
+                selected_indices = self.sites_listbox.curselection()
+                if not selected_indices:
+                    messagebox.showerror("Errore", "Seleziona un sito dalla lista per eliminarlo!")
+                    return
+
+                selected_sites = [self.sites_listbox.get(i) for i in selected_indices]
+                ans = messagebox.askyesno(title="Confirm", message="Are you sure to Delete this Site?")
+
+                if ans:
+                    
+                    with open("blocked_sites.json", "r") as f:
+                        sites_data = json.load(f)
+                    
+
+                    sites_data["sites"] = [site for site in sites_data["sites"] if site["name"] not in selected_sites]
+
+                    with open("blocked_sites.json", "w") as f:
+                        json.dump(sites_data, f, indent=4)
+
+                    for index in reversed(selected_indices):  
+                        self.sites_listbox.delete(index)
+
+                    messagebox.showinfo("Confirmed", "Site Deleted Successfully!")
+    def edit_site(self):
+        selected_index = self.sites_listbox.curselection()
+        
+
+        old_name = self.sites_listbox.get(selected_index)
+
+        edit_window = tk.Toplevel(self)
+        edit_window.title("Edit Site Name")
+        edit_window.geometry("300x150+810+465")
+        edit_window.minsize(300,150)
+        edit_window.maxsize(300,150)
+
+        edit_window.grab_set()  
+
+        
+        tk.Label(edit_window, text="Edit the Name:", font=("Verdana", 12)).pack(pady=10)
+        new_name_var = tk.StringVar(value=old_name)
+        new_name_entry = tk.Entry(edit_window, textvariable=new_name_var, font=("Verdana", 12))
+        new_name_entry.pack(pady=10, padx=10, fill="x")
+
+        def confirm_edit():
+            new_name = new_name_var.get().strip()
+            if not new_name:
+                messagebox.showerror("Error", "The name Can't be Empty!")
+                return
+
+            # Leggi e aggiorna il file JSON
+            
+            with open("blocked_sites.json", "r") as f:
+                sites_data = json.load(f)
+            
+            for site in sites_data["sites"]:
+                if site["name"] == old_name:
+                    site["name"] = new_name
+                    break
+
+            with open("blocked_sites.json", "w") as f:
+                json.dump(sites_data, f, indent=4)
+
+            
+            self.sites_listbox.delete(selected_index)
+            self.sites_listbox.insert(selected_index, new_name)
+
+            messagebox.showinfo("Success", f'Site "{old_name}" Edited in "{new_name}".')
+            edit_window.destroy()
+
+
+        tk.Button(edit_window, text="Confirm", command=confirm_edit, font=("Verdana", 12)).pack(pady=5)
+        
 
                     
+            
 
 
 
@@ -441,7 +551,10 @@ def clear_entry(event, entry):
 def open_daiy_plan_window():
     root.withdraw()
     extra_window = week_plan_window()
-    extra_window.protocol("WM_DELETE_WINDOW", lambda: reopen_window(extra_window) )
+    extra_window.protocol("WM_DELETE_WINDOW", lambda: reopen_window(extra_window))
+   
+
+
     
 def reopen_window(window):
     window.destroy() 
@@ -473,7 +586,6 @@ def display_activities(self, frame, daily_schedule, list_activity):
 root = Tk()
 root.title("FOCUS FLOW")
 root.geometry("700x600+610+220")
-root.config(bg="black")
 root.minsize(600,500)
 
 #Grid Layout configuration
@@ -528,6 +640,7 @@ activity_labels = [] # References daily plan Labels for the main window
 
 
 def highlight_current_activity(): 
+    daily_schedule = filter_activities_by_date(today)
     
     current_time = datetime.now().strftime("%H:%M")  
 
@@ -552,6 +665,5 @@ right_frame.grid(row=1, column=1, sticky="nsew", padx=10,pady=5)
 
 daily_schedule = filter_activities_by_date(today)
 display_activities(root,[left_frame,right_frame],daily_schedule,activity_labels)
-
 
 root.mainloop()
