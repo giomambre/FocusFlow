@@ -4,6 +4,7 @@ from datetime import date, datetime, timedelta
 import tkinter as tk
 from PIL import Image, ImageTk
 import json
+import os
 
 today = date.today()
 add_logo_img = Image.open("./img/add_button.png").resize((35,35))
@@ -292,9 +293,6 @@ class add_activity_window(tk.Toplevel):
         self.destroy()
         
 
-    
-
-
 class blocked_sites_window(tk.Toplevel):
     def __init__(self):
         super().__init__()
@@ -507,10 +505,6 @@ class blocked_sites_window(tk.Toplevel):
         tk.Button(edit_window, text="Confirm", command=confirm_edit, font=("Verdana", 12)).pack(pady=5)
         
 
-                    
-            
-
-
 
 def sort_activities_in_json():
    
@@ -564,24 +558,23 @@ def display_activities(self, frame, daily_schedule, list_activity):
     for label in list_activity:
         label.destroy()
     list_activity.clear()
-
+    
     if not daily_schedule and not self == root :  # empty day
         label = ttk.Label(frame[0], text="No activities scheduled", font=("Verdana", 12), background="lightgray")
         label.grid(row=0, column=0, sticky="w", pady=10, padx=5)
         list_activity.append(label)
-    
-        add_button = ttk.Button(frame[0], text="Add Activity", command=self.open_add_activity_window)
-        add_button.grid(row=1, column=0, pady=10, padx=5)
+        
         return
 
     for idx, (time, activity,is_fixed) in enumerate(daily_schedule[:10]):
+       
         target_frame = frame[0] if idx < 6 else frame[1]
         row = idx if idx < 6 else idx - 6
         bg_color = "lightblue" if is_fixed else "#e74c3c" 
         label = ttk.Label(target_frame, text=f"{time} {activity}", font=("Verdana", 12), background=bg_color)
         label.grid(row=row, column=0, sticky="w", pady=10, padx=5)
         list_activity.append(label)
-
+    
 
 root = Tk()
 root.title("FOCUS FLOW")
@@ -639,22 +632,82 @@ activity_listbox["yscrollcommand"] = scrollbar_activity.set
 activity_labels = [] # References daily plan Labels for the main window
 
 
-def highlight_current_activity(): 
-    daily_schedule = filter_activities_by_date(today)
+def block_sites():
+    #  hosts path
+    print("Blocking")
+    if os.name == "nt":  # Windows
+        hosts_path = r"C:\Windows\System32\drivers\etc\hosts"
+    else:  # Linux/Mac
+        hosts_path = "/etc/hosts"
+
+    redirect_ip = "127.0.0.1"  #
+    try:
+        
+        with open("blocked_sites.json", "r") as f:
+            sites_data = json.load(f)
+
+        sites_to_block = [site["name"] for site in sites_data.get("sites", [])]
+
+        # reads the current hosth file
+        with open(hosts_path, "r") as file:
+            hosts_content = file.readlines()
+
+        #adds just the new one
+        with open(hosts_path, "a") as file:  
+            for site in sites_to_block:
+                entry = f"{redirect_ip} {site}\n"
+                if entry not in hosts_content:
+                    file.write(entry)
+                    
+    except PermissionError:
+        messagebox.showerror("Error ", "No Admin Permissions!!")
+    except Exception as e:
+        messagebox.showerror("Error", e)
+
+
+def unblock_sites():
+    print("Unblocking")
+
+    if os.name == "nt":
+        hosts_path = r"C:\Windows\System32\drivers\etc\hosts"
+    else:
+        hosts_path = "/etc/hosts"
+
+    try:
+        with open(hosts_path, "r") as file:
+            hosts_content = file.readlines()
+
+        with open(hosts_path, "w") as file:
+            for line in hosts_content:
+                if not line.startswith("127.0.0.1"):
+                    file.write(line)
+
+    except PermissionError:
+        messagebox.showerror("Error", "No Admin Permissions!!")
+    except Exception as e:
+        messagebox.showerror("Error", e)
+
+
+
+def highlight_current_activity():
+
     
+    daily_schedule = filter_activities_by_date(today)
     current_time = datetime.now().strftime("%H:%M")  
-
-    for idx, (time_range, activity) in enumerate(daily_schedule):
-        start_time, end_time = time_range.split(" - ")  
-
-       
-        if start_time <= current_time <= end_time:
+    
+    for idx, (time_range, activity, is_fixed) in enumerate(daily_schedule):
+        start_time, end_time = time_range.split(" - ") 
+        
+        if start_time <= current_time <= end_time:  
             activity_labels[idx].config(background="yellow", font=("Verdana", 12, "bold"))
+            block_sites()
         else:
-            activity_labels[idx].config(background="red", font=("Verdana", 12))  
+            bg_color = "lightblue" if is_fixed else "#e74c3c"
+            activity_labels[idx].config(background=bg_color, font=("Verdana", 12))
+            
 
-   
-    root.after(60000, highlight_current_activity)
+    
+    root.after(1000, highlight_current_activity)
 
 
 left_frame = ttk.Frame(root)
@@ -665,5 +718,6 @@ right_frame.grid(row=1, column=1, sticky="nsew", padx=10,pady=5)
 
 daily_schedule = filter_activities_by_date(today)
 display_activities(root,[left_frame,right_frame],daily_schedule,activity_labels)
+highlight_current_activity()
 
 root.mainloop()
