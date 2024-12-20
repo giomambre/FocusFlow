@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import ttk,messagebox
 from datetime import date, datetime, timedelta
 import tkinter as tk
+from tkcalendar import Calendar
 from PIL import Image, ImageTk
 import json
 import os
@@ -46,15 +47,17 @@ def filter_activities_by_date(date_to_check):
             json.dump(schedule_data, f, indent=4)
     for activity in schedule_data.get("fixed_activities", []):
         
-        if activity["recurrence"] == "d" and (not activity.get("end_date") or date_to_check <= datetime.strptime(activity["end_date"], "%d/%m/%Y").date()):
+        if activity["recurrence"] == "D" and (not activity.get("end_date") or date_to_check <= datetime.strptime(activity["end_date"], "%d/%m/%Y").date()):
             add_recurrence_in_json(activity, formatted_date)
         
-        elif activity["recurrence"] == "w" and date_to_check.strftime("%A") == activity.get("day_of_week"):
+        elif activity["recurrence"] == "W" and date_to_check.strftime("%A") == activity.get("day_of_week"):
             add_recurrence_in_json(activity, formatted_date)
 
-        elif activity["recurrence"] == "m" and date_to_check.strftime("%A") == activity.get("day_of_week") and (date_to_check.day - 1) // 7 + 1 == activity.get("week_of_month"):
+        elif activity["recurrence"] == "M" and date_to_check.strftime("%A") == activity.get("day_of_week") and (date_to_check.day - 1) // 7 + 1 == activity.get("week_of_month"):
             add_recurrence_in_json(activity, formatted_date)
-    
+        elif activity["recurrence"] == "Y" and (not activity.get("end_date") or date_to_check <= datetime.strptime(activity["end_date"], "%d/%m/%Y").date()) and formatted_date[:5] == activity["date"][:5]:
+            add_recurrence_in_json(activity, formatted_date)
+
     # Reload the updated schedule data to include added recurrences
     with open('schedule_data.json', "r") as f:
         schedule_data = json.load(f)
@@ -210,10 +213,10 @@ class add_activity_window(tk.Toplevel):
 
         name_activity_entry = tk.Entry(self,textvariable = name_activity, font=('Verdana',14),bg="#ffffff",borderwidth=0)
         name_activity_entry.insert(0, "Title")
-        name_activity_entry.grid(row = 1, column= 1, pady=10 , padx=10,sticky="nswe",columnspan=3)
+        name_activity_entry.grid(row = 1, column= 0, pady=10 , padx=10,sticky="nswe",columnspan=3)
         name_activity_entry.bind("<Button-1>", lambda event: clear_entry(event, name_activity_entry))
         
-
+        
         
         def validate_time(self):
             start = start_time.get()
@@ -221,8 +224,6 @@ class add_activity_window(tk.Toplevel):
     
             if time_options.index(start) >= time_options.index(end):
                 messagebox.showerror("Error", "Invalid Time")
-            
-
 
         time_options = []
         for hour in range(24):
@@ -231,31 +232,78 @@ class add_activity_window(tk.Toplevel):
         
         
         start_time = ttk.Combobox(self, values=time_options, state="readonly", width=10)
-        start_time.grid(row=2, column=1, padx=10, pady=10,sticky="nwse")
+        start_time.grid(row=2, column=0, padx=10, pady=10,sticky="nwse")
         start_time.current(0)  # Imposta il valore iniziale
 
         # Etichetta e menu a tendina per l'ora di fine
         
         end_time = ttk.Combobox(self, values=time_options, state="readonly", width=10)
-        end_time.grid(row=2, column=2, padx=10, pady=10,sticky="nwse")
+        end_time.grid(row=2, column=1, padx=10, pady=10,sticky="nwse")
         end_time.current(0)  # Imposta il valore iniziale
         end_time.bind("<<ComboboxSelected>>", validate_time)
         
         
         confirm_button = Button(self,text = "ADD", command=self.insert_new_activity)
         confirm_button.grid(row=6, column=1, padx=10, pady=10,sticky="nwse",columnspan=3)
+        
+        self.is_repeating  = tk.IntVar()
+        checkbutton = tk.Checkbutton(self, text="repeating?", variable=self.is_repeating, onvalue=1, offvalue=0,font=("Verdana", 12, "bold"), command=self.check_onchange)
+        checkbutton.grid(row = 3 ,column=0,padx=10, pady=10,sticky="nws")
+        
+        self.type_of_rec = tk.StringVar()
+        self.type_of_rec_combobox = ttk.Combobox(self,textvariable= self.type_of_rec, state="readonly")
+        self.type_of_rec_combobox.grid(row = 3 , column= 1,padx=10, pady=10,sticky="we")
+        self.type_of_rec_combobox["values"] = ["Daily", "Weekly" , "Monthly" , "Yearly"]
+        self.type_of_rec_combobox.grid_remove()
+        
+        
+        self.end_date_label = Label(self, text="End Date:", font=("Verdana", 12))
+        self.end_date_label.grid(row=4, column=0, padx=10, pady=10, sticky="nw")
+        self.end_date_label.grid_remove()  
+
+        self.end_date_button = Button(self, text="Select Date", command=self.show_calendar)
+        self.end_date_button.grid(row=4, column=1, padx=10, pady=10, sticky="nw")
+        self.end_date_button.grid_remove()  
+
+        self.selected_end_date = None
+    def show_calendar(self):
+            calendar_window = Toplevel(self)
+            calendar_window.geometry("300x300+{}+{}".format(
+        self.winfo_rootx() + (self.winfo_width() // 2) - 150,
+        self.winfo_rooty() + (self.winfo_height() // 2) - 150
+    ))
+            calendar_window.title("Select End Date")
+            calendar = Calendar(calendar_window, selectmode='day')
+            calendar.pack(padx=10, pady=10)
+
+            def select_date():
+                selected_date = calendar.get_date()
+
+                formatted_date = datetime.datetime.strptime(selected_date, "%m/%d/%y").strftime("%d/%m/%Y")                
+                self.selected_end_date = formatted_date
+                messagebox.showinfo("Selected Date", f"End Date Selected:  {self.selected_end_date}")
+                calendar_window.destroy()
 
         
-        
+     
+    def check_onchange(self):
+        if self.is_repeating.get() == 1:
+            self.type_of_rec_combobox.grid() 
+            self.end_date_label.grid()  
+            self.end_date_button.grid()  
+        else:
+            self.type_of_rec_combobox.grid_remove() 
+            self.end_date_label.grid_remove()
+            self.end_date_button.grid_remove()
+                 
     def insert_new_activity(self):
-    # Recupera i valori inseriti dall'utente
+        
         with open('schedule_data.json',"r") as f:
             schedule_data = json.load(f)
         activity_title = self.children["!entry"].get()
         start_time = self.children["!combobox"].get()
         end_time = self.children["!combobox2"].get()
-
-        # Verifica che i campi siano validi
+        formatted_date = self.current_day.strftime("%d/%m/%Y")
         if not activity_title or activity_title == "Title":
             messagebox.showerror("Error", "Please enter a valid title for the activity.")
             return
@@ -265,22 +313,39 @@ class add_activity_window(tk.Toplevel):
             return
 
         
+        if self.is_repeating.get() == 1:
+            
+            new_fixed = {
+            "name": activity_title,
+            "time_range": f"{start_time} - {end_time}",
+            "recurrence": str(self.type_of_rec)[0],
+            "day_of_week": self.current_day.strftime("%A"),
+            "week_of_month" : (self.current_day.day - 1) // 7 + 1,
+            "date" : formatted_date,
+            "end_date" : self.selected_end_date 
+            
+            }
+            
+            
+            schedule_data["fixed_activities"].append(new_fixed)
+            
+        else : 
+        
+            new_activity = {
+                "title": activity_title,
+                "time_range": f"{start_time} - {end_time}"
+            }
 
-        new_activity = {
-            "title": activity_title,
-            "time_range": f"{start_time} - {end_time}"
-        }
+       
+            specific_day = next((day for day in schedule_data.get("specific_days", []) if day["date"] == formatted_date), None)
 
-        formatted_date = self.current_day.strftime("%d/%m/%Y")
-        specific_day = next((day for day in schedule_data.get("specific_days", []) if day["date"] == formatted_date), None)
-
-        if specific_day:
-            specific_day["activities"].append(new_activity)
-        else:
-            schedule_data["specific_days"].append({
-                "date": formatted_date,
-                "activities": [new_activity]
-            })
+            if specific_day:
+                specific_day["activities"].append(new_activity)
+            else:
+                schedule_data["specific_days"].append({
+                    "date": formatted_date,
+                    "activities": [new_activity]
+                })
 
         with open('schedule_data.json', 'w') as f:
             json.dump(schedule_data, f, indent=4)
@@ -409,6 +474,10 @@ class blocked_sites_window(tk.Toplevel):
     def add_site_in_json(self, name, listbox):
         if not name.strip():  # Controlla che il nome non sia vuoto
             messagebox.showerror("Error", "The entry can't be Empty!")
+            return
+
+        if name == "Name Site":
+            messagebox.showerror("Error", "Please enter a valid title of the website.")
             return
 
         try:
@@ -616,15 +685,15 @@ open_week_plan_button.grid(column=1,row=2,sticky="nwse",padx = 20 ,pady=20)
 
 #Next Activity to Do
 
-activity = [i for i in range(26)]
-list_activity = StringVar(value=activity)
-activity_listbox = Listbox(root, listvariable=list_activity, height=6,selectmode="extended", font=("Verdana", 10),justify=CENTER )
-activity_listbox.grid(row = 2 , column= 0,sticky="nsew",padx = 5,pady=5)
+next_events = ["event " + str(i) for i in range(26)]
+next_events_list = StringVar(value=next_events)
+next_events_list = Listbox(root, listvariable=next_events_list, height=6,selectmode="extended", font=("Verdana", 10),justify=CENTER )
+next_events_list.grid(row = 2 , column= 0,sticky="nsew",padx = 5,pady=5)
 
-scrollbar_activity = ttk.Scrollbar(root, orient="vertical", command=activity_listbox.yview) 
-scrollbar_activity.grid(row = 2 , column= 0,sticky="nse")
+scrollbar_events = ttk.Scrollbar(root, orient="vertical", command=next_events_list.yview) 
+scrollbar_events.grid(row = 2 , column= 0,sticky="nse")
 
-activity_listbox["yscrollcommand"] = scrollbar_activity.set
+next_events_list["yscrollcommand"] = scrollbar_events.set
 
 
 #Today Plan
@@ -661,6 +730,7 @@ def block_sites():
                     
     except PermissionError:
         messagebox.showerror("Error ", "No Admin Permissions!!")
+        root.destroy()
     except Exception as e:
         messagebox.showerror("Error", e)
 
@@ -681,9 +751,9 @@ def unblock_sites():
             for line in hosts_content:
                 if not line.startswith("127.0.0.1"):
                     file.write(line)
-
     except PermissionError:
-        messagebox.showerror("Error", "No Admin Permissions!!")
+        messagebox.showerror("Error ", "No Admin Permissions!!")
+        root.destroy()
     except Exception as e:
         messagebox.showerror("Error", e)
 
@@ -698,16 +768,23 @@ def highlight_current_activity():
     for idx, (time_range, activity, is_fixed) in enumerate(daily_schedule):
         start_time, end_time = time_range.split(" - ") 
         
-        if start_time <= current_time <= end_time:  
-            activity_labels[idx].config(background="yellow", font=("Verdana", 12, "bold"))
+        if start_time <= current_time <= end_time:
+            try:
+                activity_labels[idx].config(background="yellow", font=("Verdana", 12, "bold"))
+            except IndexError:
+                print("")
+           
             block_sites()
         else:
             bg_color = "lightblue" if is_fixed else "#e74c3c"
-            activity_labels[idx].config(background=bg_color, font=("Verdana", 12))
+            try:
+                activity_labels[idx].config(background=bg_color, font=("Verdana", 12))
+            except IndexError:
+                print("")
             
 
     
-    root.after(1000, highlight_current_activity)
+    root.after(10000, highlight_current_activity)
 
 
 left_frame = ttk.Frame(root)
@@ -719,5 +796,7 @@ right_frame.grid(row=1, column=1, sticky="nsew", padx=10,pady=5)
 daily_schedule = filter_activities_by_date(today)
 display_activities(root,[left_frame,right_frame],daily_schedule,activity_labels)
 highlight_current_activity()
+
+root.protocol("WM_DELETE_WINDOW", lambda : (unblock_sites(),root.destroy()))
 
 root.mainloop()
