@@ -30,8 +30,6 @@ Whether you're tackling a complex project or striving to minimize distractions, 
 3. **Review Your Progress**: Use the intuitive interface to track your productivity and adjust future plans.
 
 
-## 📷 Vide Demo
-
 ## 📦 Installation
 Clone the repository and run the application using Python:
 
