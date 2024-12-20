@@ -5,8 +5,8 @@
 *"In today's fast-paced world, I have come to realize that our ability to focus and resist distractions is one of our most valuable assets. From my own experience, I often find time slipping away, leaving me with a lingering sense of unaccomplished goals and wasted hours."*
 
 ## ⚙️ What I'm working on right now 
-- Recurring activities
-- Improved blocked sites page 
+- Recurring activities (added✅)
+- Improved blocked sites page (added✅)
 - A Gui (because the current one is not even a Gui) at the moment I'm working mainly on the backend of the app, so the frontend is very bad, and I know it
 - **Future Ideas**: Weekly Summary of deep work hours, Syncing with iPhone to enable Do Not Disturb while being in a Session
 
