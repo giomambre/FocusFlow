@@ -233,13 +233,12 @@ class add_activity_window(tk.Toplevel):
         
         start_time = ttk.Combobox(self, values=time_options, state="readonly", width=10)
         start_time.grid(row=2, column=0, padx=10, pady=10,sticky="nwse")
-        start_time.current(0)  # Imposta il valore iniziale
+        start_time.current(0)  
 
-        # Etichetta e menu a tendina per l'ora di fine
         
         end_time = ttk.Combobox(self, values=time_options, state="readonly", width=10)
         end_time.grid(row=2, column=1, padx=10, pady=10,sticky="nwse")
-        end_time.current(0)  # Imposta il valore iniziale
+        end_time.current(0) 
         end_time.bind("<<ComboboxSelected>>", validate_time)
         
         
@@ -472,7 +471,7 @@ class blocked_sites_window(tk.Toplevel):
     
 
     def add_site_in_json(self, name, listbox):
-        if not name.strip():  # Controlla che il nome non sia vuoto
+        if not name.strip():  
             messagebox.showerror("Error", "The entry can't be Empty!")
             return
 
@@ -550,7 +549,7 @@ class blocked_sites_window(tk.Toplevel):
                 messagebox.showerror("Error", "The name Can't be Empty!")
                 return
 
-            # Leggi e aggiorna il file JSON
+           
             
             with open("blocked_sites.json", "r") as f:
                 sites_data = json.load(f)
