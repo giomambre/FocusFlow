@@ -2,9 +2,7 @@
 
 **FocusFlow** 
 
-*"In today's fast-paced world, I have come to realize that our ability to focus and resist distractions is one of our most valuable assets. From my own experience, I often find time slipping away, leaving me with a lingering sense of unaccomplished goals and wasted hours. I have realized that frequent, often unnoticed distractions are what pull my attention away from what truly matters.
-To address this challenge, I developed a desktop application designed to improve productivity by integrating deep work principles with intuitive task management.
-Whether you're tackling a complex project or striving to minimize distractions, FocusFlow empowers you to stay on track, optimize your focus, and achieve your goals effectively."*
+*"In today's fast-paced world, I have come to realize that our ability to focus and resist distractions is one of our most valuable assets. From my own experience, I often find time slipping away, leaving me with a lingering sense of unaccomplished goals and wasted hours."*
 
 ## ⚙️ What I'm working on right now 
 - Recurring activities
